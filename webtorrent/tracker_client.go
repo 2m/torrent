@@ -77,6 +77,7 @@ func (tc *TrackerClient) doWebsocket() error {
 	tc.wsConn = c
 	tc.cond.Broadcast()
 	tc.mu.Unlock()
+	tc.announceOutboundOffers()
 	err = tc.trackerReadLoop(tc.wsConn)
 	tc.mu.Lock()
 	tc.closeUnusedOffers()
@@ -121,6 +122,12 @@ func (tc *TrackerClient) closeUnusedOffers() {
 		offer.peerConnection.Close()
 	}
 	tc.outboundOffers = nil
+}
+
+func (tc *TrackerClient) announceOutboundOffers() {
+	for _, offer := range tc.outboundOffers {
+		go tc.Announce(tracker.Started, offer.infoHash)
+	}
 }
 
 func (tc *TrackerClient) Announce(event tracker.AnnounceEvent, infoHash [20]byte) error {
